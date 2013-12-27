@@ -26,15 +26,25 @@ def debug_timing(sc, info):
 class Game_Main(object):
 # ------------------------------------------------------------------------------
     def __init__(self, d_rules, game_file = None):
-        self.d_rules    = d_rules
-        self.d_planets  = {}
-        self.d_stars    = {}
-        self.d_colonies = {}
-        self.d_heroes   = {}
-        self.d_players  = {}
-        self.d_ships    = {}
+        self.d_rules      = d_rules
+        self.d_galaxy     = {}
+        self.d_game_opts  = {}
+        self.d_planets    = {}
+        self.d_stars      = {}
+        self.d_colonies   = {}
+        self.d_heroes     = {}
+        self.d_players    = {}
+        self.d_ships      = {}
         if game_file:
             self.load_moo2_savegame(game_file)
+# ------------------------------------------------------------------------------
+    def init_game_opts(self):
+        # Currently, there is no separate class so just share data.
+        self.d_game_opts = self.d_load_game_opts
+# ------------------------------------------------------------------------------
+    def init_galaxy(self):
+        # Currently, there is no separate class so just share data.
+        self.d_galaxy = self.d_load_galaxy
 # ------------------------------------------------------------------------------
     def init_planets(self):
         # Transfer generic loaded data into game memory object.
@@ -90,8 +100,8 @@ class Game_Main(object):
             i_player_id = d_hero['player']
             if i_player_id != 0xFF:
                 if not self.d_players_heroes.has_key(i_player_id):
-                    self.players_heroes[i_player_id] = {}
-                self.players_heroes[i_player_id][d_hero['id']] = d_hero
+                    self.d_players_heroes[i_player_id] = {}
+                self.d_players_heroes[i_player_id][d_hero['id']] = d_hero
 # ------------------------------------------------------------------------------
     def init_players(self):
         # Transfer generic loaded data into game memory object.
@@ -125,6 +135,8 @@ class Game_Main(object):
         self.d_load_colonies  = savegame.parse_colonies()
         self.d_load_ships     = savegame.parse_ships()
 
+        self.init_game_opts()
+        self.init_galaxy()
         self.init_planets()
         self.init_stars()
         self.init_colonies()
@@ -132,342 +144,330 @@ class Game_Main(object):
         self.init_players()
         self.init_ships()
         #self.recount()
-## ------------------------------------------------------------------------------
-#    def get_colony_leader(self, i_colony_id):
-#        i_owner_id  = self.d_colonies[i_colony_id].i_owner_id
-#        i_star_star = self.d_colonies[i_colony_id].o_planet.i_star_id
-#        for i_hero_id in self.list_player_colony_leaders(colony_owner):
-#            if self.heroes[i_hero_id]['location'] == i_star_id:
-#                return self.d_heroes[i_hero_id]
-#        return None
-## ------------------------------------------------------------------------------
-#    def list_area_tech_ids(self, i_research_area):
-#        v_techs = []
-#        for i_tech_id in self.d_rules['tech_table']:
-#            if self.d_rules['tech_table'][i_tech_id]['area'] == i_research_area:
-#                v_techs.append(i_tech_id)
-#        return sorted(v_techs)
-## ------------------------------------------------------------------------------
-#    def colony_owned_by(self, i_colony_id, i_player_id):
-#        """ Returns True if the given i_colony_id belongs to the indicated player. """
-#        return self.d_colonies.has_key(i_colony_id) and self.colonies[i_colony_id].is_owned_by(i_player_id)
-## ------------------------------------------------------------------------------
-#    def recount_heroes(self):
-#        ###JWL : Does this really need to be done as a nested loop each turn???
-#        print "=== Recount Heroes ==="
-#        for i_hero_id, d_hero in self.d_heroes.items():
-#            d_hero['level'] = 0
-#            for i_level in self.rules['hero_levels']:
-#                if d_hero['experience'] >= i_level:
-#                    d_hero['level'] += 1
-#                   #print 'Hero %s leveled up to %d' % (d_hero['name'], d_hero['level'])
-## ------------------------------------------------------------------------------
-#    def recount_colonies(self):
-#        print "=== Recount Colonies ==="
-#        for colony_id, colony in self.colonies.items():
-#            print("Game::recount_colonies() ... colony_id = %i" % colony_id)
-#            if colony.exists():
-#                colony_leader = self.get_colony_leader(colony_id)
-#                colony.recount(self.rules, colony_leader, self.players)
-## ------------------------------------------------------------------------------
-#    def list_player_heroes(self, i_player_id, i_hero_type):
-#        d_list = {}
-#        if self.players_heroes.has_key(player_id):
-#            for i_hero_id, o_hero in self.players_heroes[i_player_id].items():
-#                if o_hero['type'] == i_hero_type:
-#                    d_list[i_hero_id] = o_hero
-#        return d_list
-## ------------------------------------------------------------------------------
-#    def list_player_officers(self, i_player_id):
-#        return self.list_player_heroes(i_player_id, K_HERO_OFFICER)
-## ------------------------------------------------------------------------------
-#    def list_player_governors(self, i_player_id):
-#        return self.list_player_heroes(i_player_id, K_HERO_GOVERNOR)
-## ------------------------------------------------------------------------------
-#    def update_research(self, player_id, research_item):
-#        print("Game::update_research() ... player_id = %i, research_item = %i" % (player_id, research_item))
-#        player = self.players[player_id]
-#        player.research_item        = research_item
-#        player.research_area        = self.rules['tech_table'][research_item]['area']
-#        player.research_cost        = rules.research_costs(self.rules['research_areas'], player.i_research_area, player.i_research)
-#        player.research_turns_left  = rules.research_turns(player.i_research_cost, player.i_research_progress, player.i_research)
-#        return True
-## ------------------------------------------------------------------------------
-#    def set_colony_build_queue(self, player_id, colony_id, build_queue):
-#        """ Sets a new build queue for a given colony_id owned by player_id
-#
-#        """
-#        print("@ Game::set_colony_build_queue()")
-#        print("    colony_id: %i" % colony_id)
-#        print("    build_queue: %s" % str(build_queue))
-#        if self.colony_owned_by(colony_id, player_id):
-#            # TODO: validate the build queue:
-#            #           all items must be available based on known technologies?
-#            #           buildings can't be already present - remove duplicates or just fail?
-#            #           check terraforming
-#            #           check gravity generator
-#            #           check artifical planet
-#            #           check star system unique items (star gate, artemis ...)
-#            #           what else?
-#            #           IF ANY ERROR OCCURS DURING ABOVE CHECKS, METHOD SHOULD NOT SET THE NEW QUEUE BUT RETURN FALSE TO PREVENT CONFUSION
-#            self.colonies[colony_id].set_build_queue(build_queue)
-#            return True
-#
-#        return False
-#
-#    def recount_players(self):
-#
-#        print "=== Recount Players ==="
-#
-#        # Calculate each player's global balance for food and research.
-#        for player_id in self.players:
-#            player          = self.players[player_id]
-#            player.research = 0
-#            player.food     = 0
-#
-#        for colony_id, colony in self.colonies.items():
-#            if colony.exists():
-#                player = self.players[colony.get_owner()]
-#                player.add_research(colony.get_research())
-#                player.add_food(colony.get_food() - colony.total_population())
-#
-#        for player_id in range(8):
-#            player = self.players[player_id]
-#            if player.alive():
-#                self.update_research(player_id, player.research_item)
-#
-#            research_areas = {}
-#            for res_id in self.rules['research']:
-#                area_id = self.rules['research'][res_id]['start_area']
-#                #print "                         AREA: %s" % res_id
-#                #print "                         start_area = %i" % area_id
-#                while 1:
-#                    #print "      checking area_id = %i" % area_id
-#                    if not self.rules['research_areas'][area_id]['next']:
-#                        break
-#
-#                    area_techs = self.list_area_tech_ids(area_id)
-#                    #print "          area_techs = %s" % str(area_techs)
-#                    new_area_id = 0
-#                    for tech_id in area_techs:
-#                        if player.knows_technology(tech_id):
-#                            #print "known tech! ... %i .. moving to next area" % tech_id
-#                            new_area_id = self.rules['research_areas'][area_id]['next']
-#                            break
-#
-#                    if new_area_id:
-#                        area_id = new_area_id
-#                    else:
-#                        break
-#
-#                research_areas[res_id] = self.list_area_tech_ids(area_id)
-#            player.update_research_areas(research_areas)
-#            #print "                    research_areas = %s" % str(player['research_areas'])
-#            #for tech_id in player['known_techs']:
-#            #    tech = self.rules['tech_table'][tech_id]
-#            #    print "                         known = %s (area: %i)" % (tech['name'], tech['area'])
-#            # / refresh player's research_areas
-#
-#    # /recount_players
-#
-#    def recount(self):
-#        self.recount_heroes()
-#        self.recount_colonies()
-#        self.recount_players()
-#    # /recount
-#
-#
-#    def raise_population(self):
-#        for colony_id, colony in self.colonies.items():
-#            colony.raise_population()
-#    # /raise_population
-#
-#    def get_stars_for_player(self, player_id):
-#        """ Returns a dictionary of all stars in galaxy.
-#        Stars that player doesn't know yet are listed as an UnexploredStar class
-#
-#        """
-#        stars = {}
-#        for star_id, star in self.stars.items():
-#            player = self.players[player_id]
-#            if player.knows_star_id(star_id):
-#                stars[star_id] = star
-#            else:
-#                stars[star_id] = universe.UnexploredStar(star_id, star.get_x(), star.get_y(), star.get_size(), star.get_pict_type(), star.get_class())
-#        return stars
-#
-#    def get_colonies_for_player(self, player_id):
-#        colonies = {}
-#        for colony_id, colony in self.colonies.items():
-#            if colony.get_owner() == player_id:
-#                colonies[colony_id] = colony
-#            else:
-#                colonies[colony_id] = universe.EnemyColony(colony_id, colony.get_owner())
-#        return colonies
-#
-#    def get_data_for_player(self, player_id):
-#        """
-#        this method returns data for one particular player and leave data for other players
-#        security reasons to prevent hacked clients to display data that player should not know
-#        """
-#
-#         # TODO: implement status checking, to prevent asynchronous requests problems (client receives bad data)
-#
-#        player = self.players[player_id]
-#        return {
-#            'rules':            self.rules,
-#            'me':               player,
-#
-#            'galaxy':           self.galaxy,
-#            'players':          self.players,                             # insecure
-#            'stars':            self.get_stars_for_player(player_id),       # 100% secure?
-#            'stars_by_coords':  self.stars_by_coords,                     # insecure
-#
-#            'colony_leaders':   self.list_player_colony_leaders(player_id), # 50% secure?
-#            'officers':         self.list_player_officers(player_id),       # 50% secure?
-#
-#            'planets':          self.planets,                             # insecure
-#            'colonies':         self.get_colonies_for_player(player_id),      # 100% secured ?
-#            'prototypes':       player.prototypes,                            # 100% secured?
-#            'ships':            self.ships,                               # insecure
-#        }
-#    # /get_data_for_player
-#
-#    def get_update_for_player(self, player_id):
-#        return self.players[player_id].serialize()
-#
-#    def update_player(self, player_id, serial):
-#        self.players[player_id].unserialize(serial)
-#
-#    def move_ships(self):
-#        """ Count new position af all moving or launching ships
-#
-#            TODO: new start system exploration
-#            TODO: slowdown in nebulae
-#            TODO: usage of wormholes, jump gate and star gate
-#        """
-#        print("@ game::move_ships()")
-#        for ship_id, ship in self.ships.items():
-#            # if ship exists and is launching or already travelling
-#            if ship.exists() and ship.get_status() in (1, 2):
-#                ship_x, ship_y = ship.get_coords()
-#                ship_speed = ship.get_travelling_speed()
-#                dest = ship.get_destination()
-#                dest_x, dest_y = self.stars[dest].get_coords()
-#
-#                xx = dest_x - ship_x
-#                yy = dest_y - ship_y
-#
-#                distance = math.sqrt(xx**2 + yy**2)
-#
-#                parsecs = float(distance) / float(PARSEC_LENGTH)
-#
-#                if parsecs > ship_speed:
-#                    # move towards ship's destination at known speed
-#                    parsec_x = float(xx) / parsecs
-#                    parsec_y = float(yy) / parsecs
-#                    ship_xx = int(ship_x + math.ceil(float(ship_speed) * parsec_x))
-#                    ship_yy = int(ship_y + math.ceil(float(ship_speed) * parsec_y))
-#                    ship.set_coords(ship_xx, ship_yy)
-#                    ship.set_travelling()
-#                else:
-#                    # ship has reached its destination
-#                    ship.set_coords(dest_x, dest_y)
-#                    ship.set_orbiting()
-#                    player = self.players[ship.get_owner()]
-#                    if not player.knows_star_id(dest):
-#                        player.add_explored_star_id(dest)
-#
-#    def colonies_production(self):
-#        """ Simple colony production
-#            Every turn, the first item from build queue is pulled and produced
-#
-#            TODO: implement colony and outpost ships production
-#            TODO: implement regular ships production
-#            TODO: implement housing
-#            TODO: implement trade goods
-#            TODO: implement terraforming
-#            TODO: implement spies production
-#            TODO: implement real production cost
-#
-#        """
-#        print("@ game::colonies_production()")
-#        for colony_id, colony in self.colonies.items():
-#            colony.debug_production(self.rules)
-#            print(colony.buildings)
-#            build_item  = colony.build_item
-#            industry    = colony.industry
-#            build_total = colony.update_industry_progress()
-#            if build_item:
-#                production_id = build_item['production_id']
-#                build_rule    = self.rules['buildings'][production_id]
-#                build_cost    = build_rule['cost']
-#                build_type    = build_rule['type'] if build_rule.has_key('type') else 'building'
-#                print 'build_item (industry %d [total: %d]) ==>' % (colony.get_industry(), build_total)
-#                print build_item
-#                if build_type != 'building':
-#                    # handling for specials/housing/trade
-#                    print 'Cannot handling "typed" buildings yet.'
-#                elif build_total > build_cost:  # All others assumed to be normal buildings
-#                    print 'Building completed.  Adding to colony and resetting colony industry_progress.'
-#                    colony.add_building(production_id)
-#                    colony.remove_build_item(production_id)
-#                    colony.reset_industry_progress()
-#                colony.debug_production(self.rules)
-#                print(colony.list_buildings())
-#            else:
-#                print 'No build_item (industry %d [total: %d]) ==>' % (colony.get_industry(), build_total)
-#
-#    def update_player_research(self, player):
-#        if player.i_research_cost > 0:
-#            player.raise_research()
-#            if player.research_completed():
-#                print "research completed"
-#                print player.known_techs
-#                print player.research_item
-#                player.add_known_technology(player.research_item)
-#                research_area_id = player.research_area
-#                if research_area_id:
-#                    research_area = self.rules['research_areas'][research_area_id]
-#                    if research_area['next']:
-#                        player.research_area = research_area['next']
-#                player.research_progress = 0
-#                player.research_item = 0
-#            else:
-#                print "research not completed yet"
+# ------------------------------------------------------------------------------
+    def list_area_tech_ids(self, i_research_area):
+        v_techs = []
+        for i_tech_id in self.d_rules['tech_table']:
+            if self.d_rules['tech_table'][i_tech_id]['area'] == i_research_area:
+                v_techs.append(i_tech_id)
+        return sorted(v_techs)
+# ------------------------------------------------------------------------------
+    def recount_heroes(self):
+        ###JWL : Does this really need to be done as a nested loop each turn???
+        print "=== Recount Heroes ==="
+        for i_hero_id, d_hero in self.d_heroes.items():
+            d_hero['level'] = 0
+            for i_level in self.d_rules['hero_levels']:
+                if d_hero['experience'] >= i_level:
+                    d_hero['level'] += 1
+                   #print 'Hero %s leveled up to %d' % (d_hero['name'], d_hero['level'])
+# ------------------------------------------------------------------------------
+    def recount_colonies(self):
+        print "=== Recount Colonies ==="
+        for colony_id, colony in self.d_colonies.items():
+            print("Game::recount_colonies() ... colony_id = %i" % colony_id)
+            if colony.exists():
+                governor = self.get_governor(colony_id)
+                colony.recount(self.d_rules, governor, self.d_players)
+# ------------------------------------------------------------------------------
+    def colony_owned_by(self, i_colony_id, i_player_id):
+        """ Returns True if the given i_colony_id belongs to the indicated player. """
+        return self.d_colonies.has_key(i_colony_id) and self.d_colonies[i_colony_id].is_owned_by(i_player_id)
+# ------------------------------------------------------------------------------
+    def get_governor(self, i_colony_id):
+        i_owner_id  = self.d_colonies[i_colony_id].i_owner_id
+        i_star_star = self.d_colonies[i_colony_id].o_planet.i_star_id
+        for i_hero_id in self.list_player_governors(i_owner_id):
+            if self.d_heroes[i_hero_id]['location'] == i_star_id:
+                return self.d_heroes[i_hero_id]
+        return None
+# ------------------------------------------------------------------------------
+    def list_player_heroes(self, i_player_id, i_hero_type):
+        d_list = {}
+        if self.d_players_heroes.has_key(i_player_id):
+            for i_hero_id, o_hero in self.d_players_heroes[i_player_id].items():
+                if o_hero['type'] == i_hero_type:
+                    d_list[i_hero_id] = o_hero
+        return d_list
+# ------------------------------------------------------------------------------
+    def list_player_officers(self, i_player_id):
+        return self.list_player_heroes(i_player_id, K_HERO_OFFICER)
+# ------------------------------------------------------------------------------
+    def list_player_governors(self, i_player_id):
+        return self.list_player_heroes(i_player_id, K_HERO_GOVERNOR)
+# ------------------------------------------------------------------------------
+    def update_research(self, i_player_id, i_research_item):
+        print("Game::update_research() ... player_id = %i, research_item = %i" % (i_player_id, i_research_item))
+        o_player = self.d_players[i_player_id]
+        o_player.research_item        = i_research_item
+        o_player.research_area        = self.d_rules['tech_table'][i_research_item]['area']
+        o_player.research_cost        = Game_Rules.research_costs(self.d_rules['research_areas'], o_player.i_research_area, o_player.i_research)
+        o_player.research_turns_left  = Game_Rules.research_turns(o_player.i_research_cost, o_player.i_research_progress, o_player.i_research)
+        return True
+# ------------------------------------------------------------------------------
+    def set_colony_build_queue(self, i_player_id, i_colony_id, build_queue):
+        """ Sets a new build queue for a given colony_id owned by player_id
+
+        """
+        print("@ Game::set_colony_build_queue()")
+        print("    colony_id: %i" % colony_id)
+        print("    build_queue: %s" % str(build_queue))
+        if self.colony_owned_by(i_colony_id, i_player_id):
+            # TODO: validate the build queue:
+            #           all items must be available based on known technologies?
+            #           buildings can't be already present - remove duplicates or just fail?
+            #           check terraforming
+            #           check gravity generator
+            #           check artifical planet
+            #           check star system unique items (star gate, artemis ...)
+            #           what else?
+            #           IF ANY ERROR OCCURS DURING ABOVE CHECKS, METHOD SHOULD NOT SET THE NEW QUEUE BUT RETURN FALSE TO PREVENT CONFUSION
+            self.d_colonies[i_colony_id].set_build_queue(build_queue)
+            return True
+
+        return False
+
+# ------------------------------------------------------------------------------
+    def recount_players(self):
+        print "=== Recount Players ==="
+
+        # Calculate each player's global balance for food and research.
+        for i_player_id, o_player in self.d_players.items():
+            o_player.research = 0
+            o_player.food     = 0
+
+        for i_colony_id, o_colony in self.d_colonies.items():
+            if o_colony.exists():
+                o_player = self.d_players[o_colony.i_owner_id]
+                o_player.add_research(o_colony.i_research)
+                o_player.add_food(o_colony.i_food - o_colony.total_population())
+
+        for i_player_id in range(K_MAX_PLAYERS):
+            o_player = self.d_players[i_player_id]
+            if o_player.alive():
+                self.update_research(i_player_id, o_player.i_research_item)
+
+            research_areas = {}
+            for res_id in self.d_rules['research']:
+                area_id = self.d_rules['research'][res_id]['start_area']
+                #print "                         AREA: %s" % res_id
+                #print "                         start_area = %i" % area_id
+                while 1:
+                    #print "      checking area_id = %i" % area_id
+                    if not self.d_rules['research_areas'][area_id]['next']:
+                        break
+
+                    area_techs = self.list_area_tech_ids(area_id)
+                    #print "          area_techs = %s" % str(area_techs)
+                    new_area_id = 0
+                    for tech_id in area_techs:
+                        if o_player.knows_technology(tech_id):
+                            #print "known tech! ... %i .. moving to next area" % tech_id
+                            new_area_id = self.d_rules['research_areas'][area_id]['next']
+                            break
+
+                    if new_area_id:
+                        area_id = new_area_id
+                    else:
+                        break
+
+                research_areas[res_id] = self.list_area_tech_ids(area_id)
+            o_player.update_research_areas(research_areas)
+            #print "                    research_areas = %s" % str(player['research_areas'])
+            #for tech_id in player['known_techs']:
+            #    tech = self.d_rules['tech_table'][tech_id]
+            #    print "                         known = %s (area: %i)" % (tech['name'], tech['area'])
+            # / refresh player's research_areas
+# ------------------------------------------------------------------------------
+    def recount(self):
+        self.recount_heroes()
+        self.recount_colonies()
+        self.recount_players()
+# ------------------------------------------------------------------------------
+    def raise_population(self):
+        for i_colony_id, o_colony in self.d_colonies.items():
+            o_colony.raise_population()
+# ------------------------------------------------------------------------------
+    def get_stars_for_player(self, i_player_id):
+        """ Returns a dictionary of all stars in galaxy.
+        Stars that player doesn't know yet are listed as an Game_UnexploredStar class
+        """
+        d_stars  = {}
+        o_player = self.d_players[i_player_id]
+        for i_star_id, o_star in self.d_stars.items():
+            if o_player.knows_star_id(i_star_id):
+                d_stars[i_star_id] = o_star
+            else:
+                d_stars[i_star_id] = Game_Star.Game_UnexploredStar(i_star_id, o_star.i_x, o_star.i_y, o_star.i_size, o_star.i_pict_type, o_star.i_class)
+        return d_stars
+# ------------------------------------------------------------------------------
+    def get_colonies_for_player(self, i_player_id):
+        d_colonies = {}
+        for i_colony_id, o_colony in self.d_colonies.items():
+            if o_colony.i_owner_id == i_player_id:
+                d_colonies[i_colony_id] = o_colony
+            else:
+                # JWL: Suspicious ... should not provide every enemy automatically (security issue)...
+                d_colonies[i_colony_id] = Game_Colony.Game_EnemyColony(i_colony_id, o_colony.i_owner_id)
+        return d_colonies
+# ------------------------------------------------------------------------------
+    def get_data_for_player(self, i_player_id):
+        """
+        this method returns data for one particular player and leave data for other players
+        security reasons to prevent hacked clients to display data that player should not know
+        """
+
+         # TODO: implement status checking, to prevent asynchronous requests problems (client receives bad data)
+
+        o_player = self.d_players[i_player_id]
+        return {
+            'rules':            self.d_rules,
+            'me':               o_player,
+
+            'galaxy':           self.d_galaxy,
+            'players':          self.d_players,                             # insecure
+            'stars':            self.get_stars_for_player(i_player_id),       # 100% secure?
+            'stars_by_coords':  self.d_stars_by_coords,                    # insecure
+
+            'governors':        self.list_player_governors(i_player_id),      # 50% secure?
+            'officers':         self.list_player_officers(i_player_id),       # 50% secure?
+
+            'planets':          self.d_planets,                             # insecure
+            'colonies':         self.get_colonies_for_player(i_player_id),      # 100% secured ?
+            'prototypes':       o_player.v_prototypes,                          # 100% secured?
+            'ships':            self.d_ships,                               # insecure
+        }
+# ------------------------------------------------------------------------------
+    def get_update_for_player(self, i_player_id):
+        return self.d_players[i_player_id].serialize()
+# ------------------------------------------------------------------------------
+    def update_player(self, i_player_id, serial):
+        self.d_players[i_player_id].unserialize(serial)
+# ------------------------------------------------------------------------------
+    def move_ships(self):
+        """ Count new position af all moving or launching ships
+
+            TODO: new start system exploration
+            TODO: slowdown in nebulae
+            TODO: usage of wormholes, jump gate and star gate
+        """
+        print("@ game::move_ships()")
+        for ship_id, ship in self.d_ships.items():
+            # if ship exists and is launching or already travelling
+            if ship.exists() and ship.i_status in (1, 2):
+                ship_x, ship_y = ship.get_coords()
+                ship_speed = ship.get_travelling_speed()
+                dest = ship.get_destination()
+                dest_x, dest_y = self.stars[dest].get_coords()
+
+                xx = dest_x - ship_x
+                yy = dest_y - ship_y
+
+                distance = math.sqrt(xx**2 + yy**2)
+
+                parsecs = float(distance) / float(PARSEC_LENGTH)
+
+                if parsecs > ship_speed:
+                    # move towards ship's destination at known speed
+                    parsec_x = float(xx) / parsecs
+                    parsec_y = float(yy) / parsecs
+                    ship_xx = int(ship_x + math.ceil(float(ship_speed) * parsec_x))
+                    ship_yy = int(ship_y + math.ceil(float(ship_speed) * parsec_y))
+                    ship.set_coords(ship_xx, ship_yy)
+                    ship.set_travelling()
+                else:
+                    # ship has reached its destination
+                    ship.set_coords(dest_x, dest_y)
+                    ship.set_orbiting()
+                    player = self.d_players[ship.i_owner_id]
+                    if not player.knows_star_id(dest):
+                        player.add_explored_star_id(dest)
+# ------------------------------------------------------------------------------
+    def colonies_production(self):
+        """ Simple colony production
+            Every turn, the first item from build queue is pulled and produced
+
+            TODO: implement colony and outpost ships production
+            TODO: implement regular ships production
+            TODO: implement housing
+            TODO: implement trade goods
+            TODO: implement terraforming
+            TODO: implement spies production
+            TODO: implement real production cost
+
+        """
+        print("@ game::colonies_production()")
+        for colony_id, colony in self.d_colonies.items():
+            colony.debug_production(self.d_rules)
+            print(colony.v_building_ids)
+            build_item  = colony.get_build_item()
+            industry    = colony.i_industry
+            build_total = colony.update_industry_progress()
+            if build_item:
+                production_id = build_item['production_id']
+                build_rule    = self.d_rules['buildings'][production_id]
+                build_cost    = build_rule['cost']
+                build_type    = build_rule['type'] if build_rule.has_key('type') else 'building'
+                print 'build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
+                print build_item
+                if build_type != 'building':
+                    # handling for specials/housing/trade
+                    print 'Cannot handling "typed" buildings yet.'
+                elif build_total > build_cost:  # All others assumed to be normal buildings
+                    print 'Building completed.  Adding to colony and resetting colony industry_progress.'
+                    colony.add_building(production_id)
+                    colony.remove_build_item(production_id)
+                    colony.reset_industry_progress()
+                colony.debug_production(self.d_rules)
+                print(colony.v_building_ids)
+            else:
+                print 'No build_item (industry %d [total: %d]) ==>' % (colony.i_industry, build_total)
+# ------------------------------------------------------------------------------
+    def update_player_research(self, player):
+        if player.i_research_cost > 0:
+            player.raise_research()
+            if player.research_completed():
+                print "research completed"
+                print player.known_techs
+                print player.research_item
+                player.add_known_technology(player.research_item)
+                research_area_id = player.research_area
+                if research_area_id:
+                    research_area = self.d_rules['research_areas'][research_area_id]
+                    if research_area['next']:
+                        player.research_area = research_area['next']
+                player.research_progress = 0
+                player.research_item = 0
+            else:
+                print "research not completed yet"
 #### JWL: Need to query user for new research via research_screen popup.
-#    # /update_player_research
-#
-#
-#    def next_turn(self):
-#        print
-#        print "##"
-#        print "#    NEW TURN!"
-#        print "##"
-#        print
-#
-#        sc = debug_timing(0, '')
-#        self.recount()
-#        sc = debug_timing(sc, 'game.recount')
-#        self.move_ships()
-#        sc = debug_timing(sc, 'game.move_ships')
-#        self.colonies_production()
-#        sc = debug_timing(sc, 'game.colonies_production')
-#
-#        for player_id in self.players:
-#            player = self.players[player_id]
-#            if player.alive():
-#                self.update_player_research(player)
-#                player.raise_bc()
-#
-#        sc = debug_timing(sc, 'game.[player research/bc]')
-#        self.raise_population()
-#        sc = debug_timing(sc, 'game.raise_population')
-#        self.recount()
-#        sc = debug_timing(sc, 'game.recount (part 2)')
-#        self.galaxy['stardate'] += 1
-#    # /next_turn
-#
+# ------------------------------------------------------------------------------
+    def next_turn(self):
+        print
+        print "##"
+        print "#    NEW TURN!"
+        print "##"
+        print
+
+        sc = debug_timing(0, '')
+        self.recount()
+        sc = debug_timing(sc, 'game.recount')
+        self.move_ships()
+        sc = debug_timing(sc, 'game.move_ships')
+        self.colonies_production()
+        sc = debug_timing(sc, 'game.colonies_production')
+
+        for i_player_id, o_player in self.d_players.items():
+            if o_player.alive():
+                self.update_player_research(o_player)
+                o_player.raise_bc()
+
+        sc = debug_timing(sc, 'game.[player research/bc]')
+        self.raise_population()
+        sc = debug_timing(sc, 'game.raise_population')
+        self.recount()
+        sc = debug_timing(sc, 'game.recount (part 2)')
+        self.d_galaxy['stardate'] += 1
 # ------------------------------------------------------------------------------
     def count_players(self):
         c = 0
@@ -558,5 +558,5 @@ class Game_Main(object):
 # Test Code
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    GAME = Game_Main(None, 'C:\\orion2cd\\SAVE1.GAM')
+    GAME = Game_Main(None, 'C:\\openmoo2\\SAVE1.GAM')
 

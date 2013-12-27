@@ -5,6 +5,7 @@ class Game_Star(Game_SpaceObject.Game_SpaceObject):
 
     def __init__(self, i_star_id):
         super(Game_Star,self).__init__(i_star_id)
+        self.i_star_id                      = i_star_id
         self.s_name                         = ''
         self.i_x                            = 0
         self.i_y                            = 0
@@ -38,6 +39,8 @@ class Game_Star(Game_SpaceObject.Game_SpaceObject):
         self.i_is_in_nebula                 = 0
 # ------------------------------------------------------------------------------
     def construct(self, d_load_struct):
+        self.i_id                           = d_load_struct['star_id']
+        self.i_star_id                      = d_load_struct['star_id']
         self.s_name                         = d_load_struct['name']
         self.i_x                            = d_load_struct['x']
         self.i_y                            = d_load_struct['y']
@@ -70,19 +73,22 @@ class Game_Star(Game_SpaceObject.Game_SpaceObject):
         self.v_surrender_to                 = d_load_struct['surrender_to']
         self.i_is_in_nebula                 = d_load_struct['is_in_nebula']
 # ------------------------------------------------------------------------------
+    def visited(self):
+        return self.i_visited != 0
+# ------------------------------------------------------------------------------
     def visited_by_player(self, i_player_id):
-        return self.i_visited & (1 << i_player_id)
+        return (self.i_visited & (1 << i_player_id)) != 0
 
 # ==============================================================================
 class Game_UnexploredStar(Game_Star):
     def __init__(self, i_star_id, i_x, i_y, i_size, i_pict_type, i_class):
         super(Game_UnexploredStar,self).__init__(i_star_id)
-        self.Game_Star.s_name       = 'Unexplored'
-        self.Game_Star.i_x          = i_x
-        self.Game_Star.i_y          = i_y
-        self.Game_Star.i_size       = i_size
-        self.Game_Star.i_class      = i_class
-        self.Game_Star.i_pict_type  = i_pict_type
+        self.s_name       = 'Unexplored'
+        self.i_x          = i_x
+        self.i_y          = i_y
+        self.i_size       = i_size
+        self.i_class      = i_class
+        self.i_pict_type  = i_pict_type
 
     def visited(self):
         return False

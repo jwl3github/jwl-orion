@@ -1,4 +1,5 @@
 import socket
+import sys
 import threading
 import time
 import hashlib
@@ -9,7 +10,7 @@ from Data_CONST import *   # For K_xxx constants
 
 # ==============================================================================
 class Network_Server(object):
-
+# ------------------------------------------------------------------------------
     def __init__(self, host, port, game):
         self.s_name               = 'unnamed'
         self.s_host               = host
@@ -27,7 +28,9 @@ class Network_Server(object):
     def spawn_server_socket(self):
         new_server_socket = Network_GameSocket.Network_GameSocket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         new_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        new_server_socket.settimeout(1)
+        #JWL# new_server_socket.settimeout(1)
+        new_server_socket.setblocking(1)   # JWL: Trial with blocking sockets
+        new_server_socket.settimeout(None)  # JWL: Trial with blocking sockets
         new_server_socket.bind((self.s_host, self.i_port))
         new_server_socket.listen(2)
         return new_server_socket
@@ -116,41 +119,41 @@ class Network_Server(object):
         # all players must confirm next turn
         return len(pl_st) == self.r_game.count_players()
 # ------------------------------------------------------------------------------
-    def handle_recv_client_data(self, thread_id):
-        self.log_info("data received from client # %s, PLAYER_ID = %i" % (thread_id, PLAYER_ID))
+    def handle_recv_client_data(self, player_id, client_socket, thread_id, data):
+        self.log_info("data received from client # %s, player_id = %i" % (thread_id, player_id))
 
         ACTION = data['action']
         PARAMS = data['params']
 
-        self.log_info("thread_id: %s\n    PLAYER_ID: %i\n    ACTION: %s\n    PARAMS: %s\n" % (thread_id, PLAYER_ID, ACTION, str(PARAMS)))
+        self.log_info("thread_id: %s\n    player_id: %i\n    ACTION: %s\n    PARAMS: %s\n" % (thread_id, player_id, ACTION, str(PARAMS)))
 
         if ACTION == "LOGIN":
             # SECURE ME!!!
-            PLAYER_ID = PARAMS['player_id']
-            self.log_info("thread \"%s\" ... PLAYER_ID set to %i" % (thread_id, PLAYER_ID ))
+            player_id = int(PARAMS['player_id'])
+            self.log_info("thread \"%s\" ... player_id set to %i" % (thread_id, player_id ))
 
         elif ACTION == "LOGOUT":
             self.set_shutdown()
-            return
+            return -1
 
         elif ACTION == "PING":
             self.send_data_to_game_client(client_socket,  thread_id, "PONG")
 
         elif ACTION == "GET_NAME":
-            self.send_data_to_game_client(client_socket,  thread_id, self.get_name())
+            self.send_data_to_game_client(client_socket,  thread_id, self.s_name)
 
         elif ACTION == "GET_SERVER_STATUS":
-            self.send_data_to_game_client(client_socket, thread_id, self.get_status())
+            self.send_data_to_game_client(client_socket, thread_id, self.s_status)
 
         elif ACTION == "NEXT_TURN":
-            self.log_info("received NEXT_TURN from thread %s ... player_id = %i" % (thread_id, PLAYER_ID))
-            self.set_next_turn(thread_id, PLAYER_ID)
+            self.log_info("received NEXT_TURN from thread %s ... player_id = %i" % (thread_id, player_id))
+            self.set_next_turn(thread_id, player_id)
             while self.get_next_turn(thread_id) != -1:
                 time.sleep(0.001)
             self.log_info("... NEXT_TURN performed, now sending NEXT_TURN_ACK")
             self.send_data_to_game_client(client_socket,  thread_id, "NEXT_TURN_ACK")
 
-        elif PLAYER_ID < 0:
+        elif player_id < 0:
             self.log_error("anonymous player sending actions!!!")
 
         elif ACTION == "FETCH_UPDATE_DATA":
@@ -159,53 +162,40 @@ class Network_Server(object):
             # includes: 2. Database of research names/costs
             # includes: 3. Database of hero names/attribs
             # includes: 4. Star chart with coords/colors/(names? - beware sharing Orion, unless bait-n-switch concept employed)
-            data = self.get_update_for_player(PLAYER_ID)
+            data = self.get_update_for_player(player_id)
             print 'type(data) ...'
             print type(data)
             self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "FETCH_GAME_DATA":
-            data = self.get_data_for_player(PLAYER_ID)
+            data = self.get_data_for_player(player_id)
             self.send_data_to_game_client(client_socket, thread_id, data)
 
         elif ACTION == "SET_RESEARCH":
             research_item = PARAMS['tech_id']
-            if not self.r_game.update_research(PLAYER_ID, research_item):
-                self.log_error("Game::set_research() failed ... PLAYER_ID = %i, research_item = %i" % (PLAYER_ID, research_item))
+            if not self.r_game.update_research(player_id, research_item):
+                self.log_error("Game::set_research() failed ... player_id = %i, research_item = %i" % (player_id, research_item))
 
         elif ACTION == "SET_BUILD_QUEUE":
-            if not self.r_game.set_colony_build_queue(PLAYER_ID, PARAMS['colony_id'], PARAMS['build_queue']):
-                self.log_error("Game::set_colony_build_queue() failed ... PLAYER_ID = %i, colony_id = %i" % (PLAYER_ID, PARAMS['colony_id']))
+            if not self.r_game.set_colony_build_queue(player_id, PARAMS['colony_id'], PARAMS['build_queue']):
+                self.log_error("Game::set_colony_build_queue() failed ... player_id = %i, colony_id = %i" % (player_id, PARAMS['colony_id']))
 
         else:
             self.log_error("unknow action received from client: '%s'" % data)
-# ------------------------------------------------------------------------------
-    def handle_recv_client_data_empty(self, thread_id, socket_down):
-        # an ugly detection if the remote connection disappeared
-        # explain: there is a 1s timeout, so counter should not exceed even a low number within 1 second...
-        ts = int(time.time())
-        if socket_down.has_key(ts):
-            socket_down[ts] += 1
-        else:
-            socket_down = {ts: 1}
 
-        if socket_down[ts] > 10:
-            self.log_info("!!! Server::run_client_handler() ... socket_down[%i] = %i" % (ts, socket_down[ts]))
-            self.log_info("!!! remote socket is down, closing local socket in thread %s" % thread_id)
-            return True
-        return False
+        return player_id
 # ------------------------------------------------------------------------------
     def run_client_handler(self, client_socket, thread_id):
         self.log_info("thread_id: %s\n    STARTED\n" % (thread_id))
-        PLAYER_ID = -1
-        socket_down = {}
+        player_id = -1
         while not self.check_shutdown():
+            print 'run_client_thread %s' % str(thread_id)
             data = client_socket.recv()
             if data:
-                self.handle_recv_client_data(thread_id)
-            elif self.handle_recv_client_data_empty(thread_id, socket_down):
+                player_id = self.handle_recv_client_data(player_id, client_socket, thread_id, data)
+            else:
                 break
-        self.log_info("thread_id: %s\n    PLAYER_ID: %i\n    CLOSING SOCKET\n" % (thread_id, PLAYER_ID))
+        self.log_info("thread_id: %s\n    player_id: %i\n    CLOSING SOCKET\n" % (thread_id, player_id))
         client_socket.close()
         self.clean_next_turn(thread_id)
 # ------------------------------------------------------------------------------
@@ -251,6 +241,7 @@ class Network_Server(object):
         self.set_turn()
 
         while not self.check_shutdown():
+            print 'run Server'
             try:
                 client_socket, (client_host, client_port) = server_socket.accept()
                 thread_id = self.spawn_thread(client_socket, client_host, client_port)
@@ -261,11 +252,12 @@ class Network_Server(object):
 #           self.show_next_turns()
 
             if self.d_threads:
+                print 'handle_thread'
                 clean_threads = []
                 for thread_id in self.d_threads:
                     is_alive = self.d_threads[thread_id].is_alive()
                     if not is_alive:
-                        self.log_info("Server::run() ... thread %s is not alive, wil be cleaned" % thread_id)
+                        self.log_info("Server::run() ... thread %s is not alive, will be cleaned" % thread_id)
                         clean_threads.append(thread_id)
 
                 # clean old threads

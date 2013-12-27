@@ -1,5 +1,6 @@
 import pygame
 import Gui_Screen
+from Data_CONST import *
 
 SHIP_TRACKS_BITMAPS = (
     [0x001400, 0x001400, 0x043804, 0x087008, 0x489038, 0x489038, 0x087008, 0x043804],
@@ -24,7 +25,7 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
         self.__tick       = None
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
-        self.reset_triggers_list()
+        super(Gui_MainScreen,self).reset_triggers_list()
         self.add_trigger({'action': "screen", 'screen': "game_menu", 'rect': pygame.Rect((255,   8), (50, 12))})
         self.add_trigger({'action': "screen", 'screen': "colonies",  'rect': pygame.Rect(( 20, 431), (65, 38)), 'key':  99}) # C key
         self.add_trigger({'action': "screen", 'screen': "leaders",   'rect': pygame.Rect((315, 431), (65, 38)), 'key': 108}) # L key
@@ -52,16 +53,15 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
     def prepare_stars(self):
         STARS    = self.list_stars()
-        FONT4    = Gui_Screen.FONT4
         map_x, map_y, map_width, map_height = 22, 21, 505, 400
 
         # wormholes
         wormholes = {}
         for star_id, star in STARS.items():
             if star.visited():
-                if star.wormhole() != 0xff:
-                    star2 = STARS[star.wormhole()]
-                    star_ids = [star.id, star2.id]
+                if star.i_wormhole != 0xff:
+                    star2 = STARS[star.i_wormhole]
+                    star_ids = [star.i_id, star2.i_id]
                     key = (min(star_ids) << 8) + max(star_ids)
                     if not wormholes.has_key(key):
                          x1, y1 = self.get_pos(star.get_coords())
@@ -82,20 +82,21 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
             if star_class < 7:
                 xx = pic_width / 2
                 yy = pic_height / 2
-                self.add_trigger({'action': "screen", 'screen': "starsystem", 'star_id': star.id, 'rect': pygame.Rect((x - xx + 3, y - yy + 3), (pic_width - 6, pic_height - 6))})
+                self.add_trigger({'action': "screen", 'screen': "starsystem", 'star_id': star.i_id, 'rect': pygame.Rect((x - xx + 3, y - yy + 3), (pic_width - 6, pic_height - 6))})
                 self.register_map_item('stars', star_icon, (x - xx, y - yy))
             # name
             yy = pic_height / 2
             if star.visited():
-                starname = FONT4.render(star.name, [0x0, 0x101018, 0x6c6c74], 1)
+                starname = self.render(K_FONT4, K_PALETTE_STARNAME, star.s_name)
                 self.register_map_item('stars', starname, (x - (starname.get_width() / 2), y + yy - 2))
 # ------------------------------------------------------------------------------
     def prepare_ships(self):
         map_x, map_y, map_width, map_height = 22, 21, 505, 400
 
+        ME              = self.get_me()
         PLAYERS         = self.list_players()
         STARS           = self.list_stars()
-        SHIPS           = self.list_ship_ids()
+        SHIPS           = self.list_ship_ids(ME.i_player_id)
         STARS_BY_COORDS = self.list_stars_by_coords()
 
         for ship_id in SHIPS:
@@ -146,14 +147,11 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
     def draw(self):
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MAIN SCREEN DRAW <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        DISPLAY = Gui_Screen.DISPLAY
-        FONT3   = Gui_Screen.FONT3
-        FONT4   = Gui_Screen.FONT4
         player  = self.get_me()
 
         self.reset_triggers_list()
-        self.draw_image_by_key('background.starfield', (0, 0))
-        self.draw_image_by_key('main_screen.panel', (0, 0))
+        self.draw_image_by_key((0, 0), 'background.starfield')
+        self.draw_image_by_key((0, 0), 'main_screen.panel')
 
         # main screen draws a lot of objects in "layers" so map images are prepared first and draw in groups after that
         self.clear_map_items()
@@ -161,13 +159,11 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
         self.prepare_stars()
 
         # stardate
-        stardate_palette = [0x0, 0x7c7c84, 0xbcbcc4]
-        FONT3.write_text(DISPLAY, 561, 29, stardate(self.get_stardate()), stardate_palette, 2)
+        self.write_text(K_FONT3, K_PALETTE_STARDATE, 561, 29, self.get_stardate_text(), 2)
 
         # research
-        research_palette = [0x0, 0x7c7c84, 0xbcbcc4]
-        FONT4.write_text(DISPLAY, 552, 380, "~%s turns" % player.research_turns_left, research_palette, 2)
-        FONT4.write_text(DISPLAY, 552, 400, "%i RP" % player.research, research_palette, 2)
+        self.write_text(K_FONT4, K_PALETTE_RESEARCH, 552, 380, "~%s turns" % player.i_research_turns_left, 2)
+        self.write_text(K_FONT4, K_PALETTE_RESEARCH, 552, 400, "%i RP" % player.i_research, 2)
 # ------------------------------------------------------------------------------
     def animate(self):
         ts = self.get_timestamp(20)
@@ -175,24 +171,23 @@ class Gui_MainScreen(Gui_Screen.Gui_Screen):
         if self.__tick == tick:
             return False
         self.__tick = tick
-        DISPLAY = Gui_Screen.DISPLAY
 
         for wormhole in self.__map_items['wormholes']:
-            gui.GUI.draw_line(wormhole['pos1'], wormhole['pos2'], [0x444444])
+            self.draw_line(wormhole['pos1'], wormhole['pos2'], [0x444444])
 
         for ship_track in self.__map_items['ship_tracks']:
-            gui.GUI.draw_line(ship_track['pos1'], ship_track['pos2'], SHIP_TRACKS_BITMAPS[tick])
+            self.draw_line(ship_track['pos1'], ship_track['pos2'], SHIP_TRACKS_BITMAPS[tick])
 
         for star in self.__map_items['stars']:
-            gui.GUI.draw_image(star['img'], star['pos1'])
+            self.draw_image(star['pos1'], star['img'])
 
         for ship in self.__map_items['ships']:
-            gui.GUI.draw_image(ship['img'], ship['pos1'])
+            self.draw_image(ship['pos1'], ship['img'])
 
         return True
 # ------------------------------------------------------------------------------
     def start(self):
-        GALAXY = networking.Client.get_galaxy()
+        GALAXY = self.get_galaxy()
         self.__galaxy_width  = GALAXY['width']
         self.__galaxy_height = GALAXY['height']
         galaxy_size_factor   = GALAXY['size_factor']

@@ -3,34 +3,28 @@ import pygame
 import Gui_Screen
 from Data_CONST import *
 
-PRODUCTION_PALETTE  = [0x0, 0x440c00, 0xac542c]
-XSHIP_PALETTE       = [0x0, 0x802810, 0xe48820, 0xe46824]
-BUILD_QUEUE_PALETTE = [0x0, 0x802810, 0xe48820]
-LIGHT_TEXT_PALETTE  = [0x0, 0x802810, 0xe48820, 0xe46824]
-DARK_TEXT_PALETTE   = [0x0, 0x440c00, 0xac542c]
-
 # ==============================================================================
 class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
-
+# ------------------------------------------------------------------------------
     def __init__(self):
         Gui_Screen.Gui_Screen.__init__(self)
         self.i_colony_id = 0
-        self.r_colony    = None
+        self.o_colony    = None
         self.i_planet_id = 0
-        self.r_planet    = None
+        self.o_planet    = None
         self.i_star_id	 = 0
-        self.r_star      = None
+        self.o_star      = None
 # ------------------------------------------------------------------------------
     def open_colony(self, colony_id):
         self.i_colony_id = colony_id
-        self.r_colony    = self.get_colony(colony_id)
-        self.i_planet_id = self.r_colony.i_planet_id
-        self.r_planet    = self.get_planet(self.i_planet_id)
-        self.i_star_id	 = self.__planet.get_star()
-        self.r_star      = self.get_star(self.i_star_id)
+        self.o_colony    = self.get_colony(colony_id)
+        self.i_planet_id = self.o_colony.i_planet_id
+        self.o_planet    = self.get_planet(self.i_planet_id)
+        self.i_star_id	 = self.o_planet.i_star_id
+        self.o_star      = self.get_star(self.i_star_id)
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
-        self.Gui_Screen.reset_triggers_list(self)
+        super(Gui_ColonyProductionScreen,self).reset_triggers_list()
         self.add_trigger({'action': "ESCAPE",  'hover_id': "ESCAPE",  'rect': pygame.Rect((494, 448), (58, 16))})
         self.add_trigger({'action': "CONFIRM", 'hover_id': "CONFIRM", 'rect': pygame.Rect((563, 448), (58, 16))})
 # ------------------------------------------------------------------------------
@@ -50,12 +44,12 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         RULES               = self.get_rules()
         PROTOTYPES          = self.list_prototypes()
         ME                  = self.get_me()
-        build_queue         = colony.get_build_queue()
+        build_queue         = colony.v_build_queue
 
         self.reset_triggers_list()
 
         self.blit(self.get_image('background', 'starfield'), (0, 0))
-        self.blit(Gui_Client.GUI.get_planet_background(planet.get_terrain(), planet.get_picture()), (0, 0))
+        self.blit(self.get_planet_background(planet.i_terrain, planet.i_picture), (0, 0))
 
         shadow = pygame.Surface((640, 480))
     #   shadow.fill((0, 0, 0))
@@ -69,10 +63,10 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         c1 = (28, 32, 44, 128)
 
         for y in range(0, 480, 2):
-            pygame.draw.line(DISPLAY, c1, (0, y), (639, y), 1)
+            self.draw_line(c1, (0, y), (639, y), 1)
 
     #    for x in range(0, 640, 2):
-    #        pygame.draw.line(DISPLAY, c1, (x, 0), (x, 479), 1)
+    #        self.draw_line(c1, (x, 0), (x, 479), 1)
 
         self.blit(self.get_image('colony_build_screen', 'panel'), (0, 0))
 
@@ -90,10 +84,10 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
             production_name = RULES['buildings'][production_id]['name']
             hover_id = "production:%i" % production_id
             if colony.in_build_queue(production_id):
-                self.write_text(K_FONT_3, LIGHT_TEXT_PALETTE, 13, y, production_name, 2)
+                self.write_text(K_FONT3, K_PALETTE_LIGHT_TEXT, 13, y, production_name, 2)
                 self.add_trigger({'action': "delete_production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
             else:
-                self.write_text(K_FONT3, DARK_TEXT_PALETTE, 13, y, production_name, 2)
+                self.write_text(K_FONT3, K_PALETTE_DARK_TEXT, 13, y, production_name, 2)
                 self.add_trigger({'action': "production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((13, y), (170, 12))})
             y += 18
 
@@ -102,12 +96,12 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         y = 20
         for production_id in (available_production['special'] + available_production['xship']):
             production_name = RULES['buildings'][production_id]['name']
-            self.write_text(K_FONT_5, LIGHT_TEXT_PALETTE, 485, y, production_name, 2)
+            self.write_text(K_FONT5, K_PALETTE_LIGHT_TEXT, 485, y, production_name, 2)
             hover_id = "production:%i" % production_id
             self.add_trigger({'action': "production", 'production_id': production_id, 'hover_id': hover_id, 'rect': pygame.Rect((485, y), (143, 15))})
             y += 19
 
-        label = self.render(K_FONT_4, LIGHT_TEXT_PALETTE, "Build List for %s" % colony.s_name, 2)
+        label = self.render(K_FONT4, K_PALETTE_LIGHT_TEXT, "Build List for %s" % colony.s_name, 2)
         self.blit(label, (240, 311))
 
         y = 334
@@ -128,7 +122,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
                 if repeat:
                     self.add_trigger({'action': "delete_repeat_production", 'item': i, 'hover_id': hover_id, 'rect': pygame.Rect((208, y - 1), (250, 15))})
                     y += 20
-                    label = self.render(K_FONT4, LIGHT_TEXT_PALETTE, "^ Repeat ^", 2)
+                    label = self.render(K_FONT4, K_PALETTE_LIGHT_TEXT, "^ Repeat ^", 2)
                     xx = (250 - label.get_width()) / 2
                     self.blit(label, (208 + xx, y))
                     self.add_trigger({'action': "delete_repeat_production", 'item': i, 'hover_id': hover_id, 'rect': pygame.Rect((208, y - 1), (250, 15))})
@@ -147,7 +141,7 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
             yy += 19
             self.blit(label_surface, (484, 110 + yy))
 
-        build_queue = colony.build_queue()
+        build_queue = colony.v_build_queue
         yy = 0
         for queue_item in build_queue:
             build_id = queue_item['item']
@@ -180,22 +174,22 @@ class Gui_ColonyProductionScreen(Gui_Screen.Gui_Screen):
         if s_action == "production":
             print("    action: %s" % s_action)
             print("        production: %i" % trigger['production_id'])
-            self.__colony.add_build_item(trigger['production_id'])
+            self.o_colony.add_build_item(trigger['production_id'])
             self.redraw_flip()
 
         elif s_action == "delete_production":
             print("    action: %s" % s_action)
             print("        production: %i" % trigger['production_id'])
-            self.__colony.remove_build_item(trigger['production_id'])
+            self.o_colony.remove_build_item(trigger['production_id'])
             self.redraw_flip()
 # ------------------------------------------------------------------------------
     def enter(self):
-        self.__old_build_queue = copy.copy(self.__colony.get_build_queue())
+        self.__old_build_queue = copy.copy(self.o_colony.v_build_queue)
 # ------------------------------------------------------------------------------
     def leave_confirm(self):
-        Network_Client.Client.set_colony_build_queue(self.__colony_id, self.__colony.get_build_queue())
+        Network_Client.Client.set_colony_build_queue(self.i_colony_id, self.o_colony.v_build_queue)
 # ------------------------------------------------------------------------------
     def leave_cancel(self):
-        self.__colony.set_build_queue(self.__old_build_queue)
+        self.o_colony.set_build_queue(self.__old_build_queue)
 # ------------------------------------------------------------------------------
 Screen = Gui_ColonyProductionScreen()

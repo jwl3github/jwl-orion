@@ -7,6 +7,6 @@ class Gui_SplashScreen(Gui_Screen.Gui_Screen):
         super(Gui_SplashScreen,self).__init__()
 # ------------------------------------------------------------------------------
     def draw(self):
-        self.draw_image_by_key('splash_screen', (0, 0))
+        self.draw_image_by_key((0, 0), 'splash_screen')
 # ------------------------------------------------------------------------------
 Screen = Gui_SplashScreen()

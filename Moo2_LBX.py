@@ -501,14 +501,32 @@ class Font(object):
         off2 = self.__read_glyph_offset(font_file_data, font_id, glyph_id + 1)
         return font_file_data[off1:off2]
 
+    def get_glyph(self, glyph_id):
+        try:
+            return self.__glyphs[glyph_id]
+        except:
+            print 'get_glyph - no such glyph: %d' % glyph_id
+            return None
+
     def get_glyph_width(self, glyph_id):
-        return self.__glyphs[glyph_id]['width']
+        glyph = self.get_glyph(glyph_id)
+        if glyph:
+            try:
+                return self.__glyphs[glyph_id]['width']
+            except:
+                print 'get_glyph_width - no "width" for glyph: %d' % glyph_id
+                print glyph
+        return 0
 
     def get_glyph_height(self, glyph_id):
-        if glyph_id == 32:
-            return 0
-        else:
-            return self.__glyphs[glyph_id]['height']
+        glyph = self.get_glyph(glyph_id)
+        if glyph:
+            try:
+                return self.__glyphs[glyph_id]['height']
+            except:
+                print 'get_glyph_height - no "height" for glyph: %d' % glyph_id
+                print glyph
+        return 0
 
     def __read_glyph(self, font_file_data, font_id, glyph_id):
         raw_data = self.__read_glyph_data(font_file_data, font_id, glyph_id)
@@ -528,9 +546,6 @@ class Font(object):
                 data[height].extend([0] * (v & 0x7f))
 
         self.__glyphs[glyph_id] =  {'width': width, 'height': height + 1, 'data': data }
-
-    def get_glyph(self, glyph_id):
-        return self.__glyphs[glyph_id]
 
     def debug_glyph(self, glyph_id, ascii_palette = " .X*45678"):
         glyph = self.get_glyph(glyph_id)
@@ -590,6 +605,8 @@ class Font(object):
 
     def render_char(self, pxarray, x, y, char, palette):
         glyph = self.get_glyph(ord(char))
+        if not glyph:
+            return 0
         yy = 0
         for row in glyph['data']:
             xx = 0
@@ -605,13 +622,18 @@ class Font(object):
         pxarray = pygame.PixelArray (surface)
         xx = 0
         for c in text:
-            xx += self.render_char(pxarray, x + xx, y, c, palette) + letter_spacing
+            if ord(c) > 0:
+                xx += self.render_char(pxarray, x + xx, y, c, palette) + letter_spacing
 
     def render(self, text, palette, letter_spacing = 1):
         width, height = 0, 0
         for c in text:
-            width += self.get_glyph_width(ord(c)) + letter_spacing
-            height = max(height, self.get_glyph_height(ord(c)))
+            # Many strings come through with nulls embedded.
+            # Although the lower routines protect, this check is faster and quiet.
+            ord_c = ord(c)
+            if ord_c > 0:
+                width += self.get_glyph_width(ord_c) + letter_spacing
+                height = max(height, self.get_glyph_height(ord_c))
         surface = pygame.Surface((width, height))
         surface.set_colorkey(0x000000)
         self.write_text(surface, 0, 0, text, palette, letter_spacing)

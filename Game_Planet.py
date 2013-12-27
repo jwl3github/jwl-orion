@@ -1,4 +1,5 @@
 from Data_CONST import *
+import Data_CONST
 import Game_Object
 
 class Game_Planet(Game_Object.Game_Object):
@@ -40,25 +41,25 @@ class Game_Planet(Game_Object.Game_Object):
         self.i_special          = d_init_struct['special']
         self.i_flags            = d_init_struct['flags']
 
-    def size_text(self):
+    def get_size_text(self):
         return Data_CONST.get_planet_size_text(self.i_size)
 
-    def terrain_text(self):
+    def get_terrain_text(self):
         return Data_CONST.get_planet_terrain_text(self.i_terrain)
 
-    def gravity_text(self):
-        return Data_CONST.get_planet_gravity_text_(self.i_gravity)
+    def get_gravity_text(self):
+        return Data_CONST.get_planet_gravity_text(self.i_gravity)
 
-    def minerals_text(self):
+    def get_minerals_text(self):
         return Data_CONST.get_planet_minerals_text(self.i_minerals)
 
     def is_asteroid_belt(self):
-        return self.type == K_PLANET_ASTEROID
+        return self.i_type == K_PLANET_ASTEROID
 
     def is_gas_giant(self):
-        return self.type == K_PLANET_GAS_GIANT
+        return self.i_type == K_PLANET_GAS_GIANT
 
     def is_planet(self):
-        return self.type == K_PLANET_HABITABLE
+        return self.i_type == K_PLANET_HABITABLE
 
 

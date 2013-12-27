@@ -32,6 +32,28 @@ K_FONT4                   = 4
 K_FONT5                   = 5
 K_FONT6                   = 6
 
+K_PALETTE_BUILD_ITEM      = [0x0, 0x141420, 0x6c688c]
+K_PALETTE_PRODUCTION      = [0x0, 0x440c00, 0xac542c]
+K_PALETTE_XSHIP           = [0x0, 0x802810, 0xe48820, 0xe46824]
+K_PALETTE_BUILD_QUEUE     = [0x0, 0x802810, 0xe48820]
+K_PALETTE_LIGHT_TEXT      = [0x0, 0x802810, 0xe48820, 0xe46824]
+K_PALETTE_DARK_TEXT       = [0x0, 0x440c00, 0xac542c]
+K_PALETTE_POPULATION      = [0x0, 0x141420, 0x6c688c]
+K_PALETTE_TITLE           = [0x0, 0x141420, 0x6c688c, 0x605c80]
+K_PALETTE_SCHEMES_FONT    = [0x0, 0x141420, 0x6c688c]
+K_PALETTE_SHIP_INFO       = [0x0, 0x181818, 0x047800]
+K_PALETTE_TECH            = [0x0, 0x082808, 0x0c840c]
+K_PALETTE_COMMON          = [0x0, 0x20284c, 0x789cc0]
+K_PALETTE_STARNAME        = [0x0, 0x101018, 0x6c6c74]
+K_PALETTE_STARDATE        = [0x0, 0x7c7c84, 0xbcbcc4]
+K_PALETTE_RESEARCH        = [0x0, 0x7c7c84, 0xbcbcc4]
+K_PALETTE_VIEWPORT_FONT   = [0x0, 0x181c40, 0x688cb0]
+K_PALETTE_INFO            = [0x0, 0x181c40, 0x688cb0]
+K_PALETTE_TITLE_SHADOW    = [0x0, 0x181c40, 0x20284c, 0x20284c]
+K_PALETTE_TITLE           = [0x0, 0x181c40, 0x506c90, 0x445c80]
+K_PALETTE_LIGHT_TEXT      = [0x0, 0x802810, 0xe48820, 0xe46824]
+K_PALETTE_DARK_TEXT       = [0x0, 0x440c00, 0xac542c]
+
 K_FARMER                  = 0x02
 K_SCIENTIST               = 0x03
 K_WORKER                  = 0x82
@@ -183,7 +205,7 @@ def get_planet_terrain_text(i_index):
 def get_planet_minerals_text(i_index):
     return get_text_list('PLANET_MINERALS')[i_index]
 
-def get_planet_gravity_text(gravity):
+def get_planet_gravity_text(i_index):
     return get_text_list('PLANET_GRAVITIES')[i_index]
 
 def get_greek_num_text(i_index):

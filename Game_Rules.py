@@ -390,9 +390,8 @@ def compose_morale_summary(RULES, colony, colony_leader, PLAYERS):
 
     # Psionics ... Morale on all planets is increased by 10% for dictatorship and imperium government
 
-#    print "@@@ colony::get_morale_summary ... TECH_PSIONICS = %i" % PLAYERS[colony.get_owner()]['technologies'][TECH_PSIONICS]
-#    if (PLAYERS[colony.get_owner()]['technologies'][TECH_PSIONICS] == 3) and (player_goverment in [GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
-#    if (TECH_PSIONICS in PLAYERS[colony.get_owner()].known_techs) and (player_goverment in [GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
+#    print "@@@ colony::get_morale_summary ... TECH_PSIONICS = %i" % PLAYERS[colony.i_owner_id]['technologies'][K_TECH_PSIONICS]
+#    if (K_TECH_PSIONICS in PLAYERS[colony.i_owner_id].known_techs) and (player_goverment in [GOVERMENT_DICTATORSHIP, GOVERMENT_IMPERIUM]):
 #        summary['psionics'] = 10
 
     for tech_id in ME.known_techs:

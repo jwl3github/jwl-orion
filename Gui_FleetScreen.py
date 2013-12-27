@@ -3,10 +3,9 @@ import Gui_Screen
 import Gui_Client
 from Data_CONST import *
 
-SHIP_INFO_PALETTE = [0x0, 0x181818, 0x047800]
 # ==============================================================================
 class Gui_FleetScreen(Gui_Screen.Gui_Screen):
-
+# ------------------------------------------------------------------------------
     i_view_size  = 20
     i_list_start = 0
     i_list_size  = 0
@@ -17,7 +16,7 @@ class Gui_FleetScreen(Gui_Screen.Gui_Screen):
         self.i_fleet_shown = -1
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
-        self.reset_triggers_list()
+        super(Gui_FleetScreen,self).reset_triggers_list()
         self.add_trigger({'action': "ESCAPE",                       'rect': pygame.Rect((558, 432), (65, 25))})
         self.add_trigger({'action': "screen", "screen": "leaders",  'rect': pygame.Rect((553, 385), (70, 20))})
         self.add_trigger({'action': "SELECT_ALL",                   'rect': pygame.Rect((353, 385), (70, 20))})
@@ -47,41 +46,35 @@ class Gui_FleetScreen(Gui_Screen.Gui_Screen):
                 dest_pos = (ship.i_dest_star_id, ship.i_x, ship.i_y)
         return fleets
 # ------------------------------------------------------------------------------
-    def palette_test(self,gui):
+    def palette_test(self):
         for i in range(17):
             print("test disp%d x:%d y:%d"%(i,0,i))
-            ship_image = Gui_Client.GUI.get_image('SHIP', 0, i+17)
-            Gui_Client.GUI.draw_image(ship_image,(120,25*i))
+            self.draw_image_by_key((120,25*i), 'SHIP', 0, i+17)
 # ------------------------------------------------------------------------------
     def draw(self):
-        PLAYERS       = self.get_players()
-        ME            = self.get_me()
-        RULES         = self.get_rules()
-        players_ships = self.get_ships(ME.i_id)
+        players_ships = self.list_ships(self.get_player_id())
         ship_square_x = 60 #guess of the size of the ship displayed
         ship_square_y = 60
 
-        #print("Player %d has %d ships" % (ME.get_id(), len(players_ships)))
+        #print("Player %d has %d ships" % (self.get_player_id(), len(players_ships)))
         #for ship in players_ships:
         #    if ship.exists():
         #        print("->name :%s %d" % (ship.get_design()['name'], ship.get_owner()))
 
-        self.draw_image_by_key('Fleet_screen.panel', (0, 0))
+        self.draw_image_by_key((0, 0), 'Fleet_screen.panel')
 
-        self.palette_test(gui)
+        self.palette_test()
 
         if len(players_ships) > 0:
             fleets = self.get_fleets(players_ships);
             self.i_num_fleets = len(fleets)
-            player = PLAYERS[ME.i_id]
             if self.i_fleet_shown == -1:
                 current_fleet = fleets[0]
                 self.i_fleet_shown = 0
+            elif self.i_fleet_shown not in range(len(fleets)):
+                current_fleet = fleets[0]
             else:
-                if self.i_fleet_shown not in range(len(fleets)):
-                    current_fleet = fleets[0]
-                else:
-                    current_fleet = fleets[self.i_fleet_shown]
+                current_fleet = fleets[self.i_fleet_shown]
 
             current_fleet.sort(key = lambda ship: ship.get_design()['size'], reverse = True)
             for i in xrange(len(current_fleet)):
@@ -96,12 +89,10 @@ class Gui_FleetScreen(Gui_Screen.Gui_Screen):
                 self.add_trigger({'action': "ship_info", 'ship': ship, 'rect': pygame.Rect(image_position, (ship_square_x, ship_square_y))})
 
                 if ship.has_no_image():
-                    ship.determine_image_keys(player.get_color())
+                    ship.determine_image_keys(self.get_me().i_color)
                 keys = ship.get_image_keys()
-                print("FS: keys %d %d"%(keys[0],keys[1]))
-                ship_image = Gui_Client.GUI.get_image('SHIP', keys[0], keys[1])
                 print("displaying ship %d %d dest %d x:%d y:%d"%(keys[0],keys[1],ship.get_destination(),ship.get_x(),ship.get_y()))
-                Gui_Client.GUI.draw_image(ship_image, image_position)
+                self.draw_image_by_key(image_position, 'SHIP', keys[0], keys[1])
 # ------------------------------------------------------------------------------
     def display_ship_info(self, ship):
         """Displays ship information text on fleet screen """
@@ -118,11 +109,11 @@ class Gui_FleetScreen(Gui_Screen.Gui_Screen):
         xpos_2 = 170  # column 2
         ypos   = 285
 
-        self.write_text(K_FONT5, SHIP_INFO_PALETTE, xpos_1, ypos +0,  design['name'])
-        self.write_text(K_FONT4, SHIP_INFO_PALETTE, xpos_1, ypos +15, crew_exp_txt)
-        self.write_text(K_FONT4, SHIP_INFO_PALETTE, xpos_1, ypos +30, shield_txt)
-        self.write_text(K_FONT4, SHIP_INFO_PALETTE, xpos_1, ypos +50, "Beam OCV:")
-        self.write_text(K_FONT4, SHIP_INFO_PALETTE, xpos_2, ypos +50, "Beam DCV:")
+        self.write_text(K_FONT5, K_PALETTE_SHIP_INFO, xpos_1, ypos +0,  design['name'])
+        self.write_text(K_FONT4, K_PALETTE_SHIP_INFO, xpos_1, ypos +15, crew_exp_txt)
+        self.write_text(K_FONT4, K_PALETTE_SHIP_INFO, xpos_1, ypos +30, shield_txt)
+        self.write_text(K_FONT4, K_PALETTE_SHIP_INFO, xpos_1, ypos +50, "Beam OCV:")
+        self.write_text(K_FONT4, K_PALETTE_SHIP_INFO, xpos_2, ypos +50, "Beam DCV:")
 # ------------------------------------------------------------------------------
     def scroll_up(self, step=1):
         return

@@ -343,6 +343,7 @@ class Moo2_Savegame(object):
             i_offset                    = SOLAR_SYSTEMS_DATA_OFFSET + (SOLAR_SYSTEM_RECORD_SIZE * i_star_id)
             o_star                      = self.unpack_from(STRUCT_TABLE, self.file_data, i_offset)
             #o_star['blockaded_players'] = bitmask_to_player_id_list(o_star['blockaded_players'])
+            o_star['star_id']           = i_star_id
             o_star['is_in_nebula']      = (o_star['is_in_nebula'] == 1)
             d_stars[i_star_id]          = o_star
         return d_stars
@@ -411,7 +412,7 @@ class Moo2_Savegame(object):
                 [ 'industry_per_worker',    'B'    ],
                 [ 'research_per_scientist', 'B'    ],
                 [ 'max_farms',              'B'    ],
-                [ '__max_population',       'B'    ], # not used?
+                [ 'max_population',         'B'    ], # not used?
                 [ 'climate',                'B'    ],
                 [ 'ground_strength',        'H'    ], # calculated for ai
                 [ 'space_strength',         'H'    ], # calculated for ai
@@ -427,6 +428,7 @@ class Moo2_Savegame(object):
         for i_colony_id in range(i_num_colonies):
             i_offset                 = COLONIES_DATA_OFFSET + (COLONY_RECORD_SIZE * i_colony_id)
             o_colony                 = self.unpack_from(STRUCT_TABLE, self.file_data, i_offset)
+            o_colony['colony_id']    = i_colony_id
             o_colony['morale']      *= 5 # Morale value is stored as divided by 5
             o_colony['colonists']    = self.parse_colony_pop(self.file_data, i_offset, o_colony['population'])
             o_colony['build_queue']  = []
@@ -525,7 +527,7 @@ class Moo2_Savegame(object):
 # Test Code
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    moo2 = Moo2_Savegame('C:\\orion2cd\\SAVE1.GAM')
+    moo2 = Moo2_Savegame('C:\\openmoo2\\SAVE1.GAM')
     #a1 = moo2.parse_game_opts()
     #a2 = moo2.parse_galaxy()
     #a4 = moo2.parse_heroes()

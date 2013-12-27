@@ -12,12 +12,15 @@ import Data_CONST
 
 # ------------------------------------------------------------------------------
 def find_moo2_dir():
-    guess_dirs = ["orion2cd", "moo2", "MOO2", "MoO2", "Moo2", "orion2", "ORION2", "Orion2", "mooii", "MOOII"]
-    for parent in range(4):
-        p = "../" * parent
-        for d in guess_dirs:
-            if os.path.isdir(p + d):
-                return p + d
+
+    return 'C:\\openmoo2\\moo2res'  
+
+    #guess_dirs = ["orion2cd", "moo2", "MOO2", "MoO2", "Moo2", "orion2", "ORION2", "Orion2", "mooii", "MOOII"]
+    #for parent in range(4):
+    #    p = "../" * parent
+    #    for d in guess_dirs:
+    #        if os.path.isdir(p + d):
+    #            return p + d
 # ------------------------------------------------------------------------------
 def show_usage(name, message):
     print
@@ -40,8 +43,8 @@ def main(argv):
         sys.exit(1)
 
     default_options = {
-        '-p':       9999,
         '-h':       "localhost",
+        '-p':       9999,
         '-player':  0
     }
 
@@ -55,14 +58,15 @@ def main(argv):
     GUI.init(MOO2_DIR)
 
     pygame.mouse.set_visible(False)
-
     pygame.display.set_caption("OpenMOO2: PLAYER_ID = %s" % PLAYER_ID)
 
     Network_Client.Client.connect(HOST, PORT, SOCKET_BUFFER_SIZE)
     Network_Client.Client.login(PLAYER_ID)
 
-#    server_status = CLIENT.get_server_status()
+#    Network_Client.Client.ping()
+#    server_status = Network_Client.Client.get_server_status()
 #    print("# server_status = %s" % str(server_status))
+
 
     # automation for development
 #    scenario = autoplayer.AutoPlayer(CLIENT)
@@ -71,8 +75,6 @@ def main(argv):
 
     #JWL#ICON = pygame.image.load(MOO2_DIR + "/orion2-icon.png")
     #JWL#pygame.display.set_icon(ICON)
-
-    Network_Client.Client.ping()
 
     Gui.GUI.run()
 

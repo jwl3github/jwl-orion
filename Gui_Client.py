@@ -15,10 +15,12 @@ import Gui_InfoScreen
 import Gui_ResearchScreen
 import Gui_StarsystemScreen
 import Gui_FleetScreen
+import Network_Client
 import Data_CONST
 from Data_CONST import *
 
-GRAPHIC_INI_FILEPATH = 'C:\\openmoo2\\graphic.ini'
+LBX_MD5_FILEPATH     = 'C:\\openmoo2\\game\\lbx.md5'
+GRAPHIC_INI_FILEPATH = 'C:\\openmoo2\\game\\graphic.ini'
 REDRAW_MOUSE_EVENT   = pygame.USEREVENT + 1
 ANIMATE_SCREEN_EVENT = pygame.USEREVENT + 2
 MOUSE_EVENT_TIMER    = 40
@@ -39,19 +41,19 @@ class Gui_Client(object):
 # ------------------------------------------------------------------------------
     def init(self, moo2_dir):
         self.moo2_dir = moo2_dir
-        pygame.init()
-        pygame.display.set_mode((640, 480), 0, 24)
         self.__load_lbx_archives()
         self.__load_fonts()
         self.__load_palettes()
         self.__load_graphic(self.graphic_ini[:1])
         self.__load_ships_lbx()
+        pygame.init()
+        pygame.display.set_mode((640, 480), 0, 24)
         self.DISPLAY = pygame.display.get_surface()
         screen = Gui_Screen.Gui_Screen()
-        screen.init()
+        screen.init(self)
 # ------------------------------------------------------------------------------
     def get_display(self):
-        """Returns Pygame Displa Surface object
+        """Returns Pygame Display Surface object
 
         Will be removed in the near future
 
@@ -60,11 +62,11 @@ class Gui_Client(object):
 # ------------------------------------------------------------------------------
     def highlight_triggers_on(self):
         """Enables the triggers highlightling"""
-        self.highlight_triggers = True
+        self.b_highlight_triggers = True
 # ------------------------------------------------------------------------------
     def highlight_triggers_off(self):
         """Disables the triggers highlightling"""
-        self.highlight_triggers = False
+        self.b_highlight_triggers = False
 # ------------------------------------------------------------------------------
     def flip(self, src = None):
         """Flips the display buffer content and redraws the mouse cursor"""
@@ -98,7 +100,7 @@ class Gui_Client(object):
         """
         print("Loading LBX archive index")
         self.lbx = {}
-        lbx_md5 = self.__read_text_file("C:\\openmoo2\\lbx.md5")
+        lbx_md5 = self.__read_text_file(LBX_MD5_FILEPATH)
         check = True
         for line in lbx_md5:
             md5, filename = line.strip().split("  ")
@@ -184,6 +186,7 @@ class Gui_Client(object):
             if subkey is None:
                 break
             img_key += ".%s" % subkey
+        ## print img_key
         return img_key
 # ------------------------------------------------------------------------------
     def set_image(self, image_data, img_key, subkey1 = None, subkey2 = None, subkey3 = None):
@@ -326,14 +329,16 @@ class Gui_Client(object):
         rect.normalize()
         return rect
 # ------------------------------------------------------------------------------
-    def draw_image(self, img, pos):
+    def draw_image(self, img, pos, show_now=False):
         """Draws an image object on a display buffer"""
         if img:
             self.DISPLAY.blit(img, pos)
+            if show_now:
+                pygame.display.update()  ### JWL: May want to include the specific image rect
 # ------------------------------------------------------------------------------
-    def draw_image_by_key(self, img_key, pos):
+    def draw_image_by_key(self, img_key, pos, show_now=False):
         """Draws an image from the image pool to a display buffer on give position"""
-        self.draw_image(self.get_image(img_key), pos)
+        self.draw_image(self.get_image(img_key), pos, show_now)
 # ------------------------------------------------------------------------------
     def repeat_draw(self, target_surface, x, y, source_surface, number, icon_width, break_count, area_width):
         """Helper method that provides repetitive image drawing e.g. production icons or colonist icons"""
@@ -357,7 +362,7 @@ class Gui_Client(object):
 # ------------------------------------------------------------------------------
     def highlight_triggers(self, triggers_list):
         """Highlight the screen's triggers by drawing a colored rectangle for any of them"""
-        if self.highlight_triggers:
+        if self.b_highlight_triggers:
             for trigger in triggers_list:
                 if trigger.has_key('rect'):
                     pygame.draw.rect(self.DISPLAY, 0x660000, trigger['rect'], 1)
@@ -369,7 +374,7 @@ class Gui_Client(object):
         Loads most of the graphic and runs the MainScreen
 
         """
-        networking.Client.fetch_game_data()
+        Network_Client.Client.fetch_game_data()
         Gui_MainScreen.Screen.start()
         Gui_SplashScreen.Screen.draw()
         self.__load_graphic(self.graphic_ini[1:])
@@ -391,6 +396,7 @@ class Gui_Client(object):
         Screen switching is processed on a GUI level rather than on Screen level
 
         """
+        print trigger
         next_screen = None
 
         s_screen = trigger['screen']
@@ -411,7 +417,7 @@ class Gui_Client(object):
             next_screen = Gui_ResearchScreen.Screen
 
         elif s_screen == "starsystem":
-            next_screen = Gui_Starsystem_Screen.Screen
+            next_screen = Gui_StarsystemScreen.Screen
             next_screen.open_star(trigger['star_id'])
 
         elif s_screen == "colony":
@@ -441,10 +447,10 @@ class Gui_Client(object):
         Waits for the server data and returns back
 
         """
-        if networking.Client.next_turn():
+        if Network_Client.Client.next_turn():
             print("@ gui.GUI::process_new_turn()")
             while True:
-                if networking.Client.fetch_update_data():
+                if Network_Client.Client.fetch_update_data():
                     return True
                 else:
                     print("    ERROR: received None from GameClient::next_turn()")
@@ -528,9 +534,9 @@ class Gui_Client(object):
                     # TODO: process boolean return value of process_new_turn() method
                     self.process_new_turn()
                     scr.draw()
-                    me = networking.Client.get_me()
+                    me = Network_Client.Client.get_me()
                     print 'New turn ... need to do finished research/prod popups...'
-                    if not me.get_research_item():
+                    if not me.i_research_item:
                         trigger = {'action': "screen", 'screen': "research", 'rect': None}
                         self.process_screen_trigger(trigger, scr)
 
@@ -559,4 +565,3 @@ class Gui_Client(object):
 
                 trigger = None
 # ------------------------------------------------------------------------------
-

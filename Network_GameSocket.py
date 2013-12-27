@@ -27,7 +27,7 @@ class Network_GameSocket(object):
     def accept(self):
         client_socket, (client_host, client_port) = self.socket.accept()
         client_socket.setblocking(1)
-        client_socket.settimeout(1)
+        #client_socket.settimeout(1)
         return Network_GameSocket(client_socket), (client_host, client_port)
 
     def connect(self, address):
@@ -38,11 +38,13 @@ class Network_GameSocket(object):
 
     def recv_raw(self, data_size):
         data = ''
-        buffer_size = self.get_buffer_size()
-        while data_size:
+        buffer_size = self.buffer_size
+        while data_size > 0:
             try:
                 chunk = self.socket.recv(min(buffer_size, data_size))
             except socket.timeout:
+                print 'recv_raw -- timeout'
+                self.socket.settimeout(None)  #JWL: temp
                 chunk = ''
             if not chunk:
                 break
@@ -51,6 +53,7 @@ class Network_GameSocket(object):
         return data
 
     def recv(self):
+        print 'gamesocket.recv'
         head_raw = self.recv_raw(self.head_size).rstrip()
         # return None if header is empty
         if not head_raw:

@@ -1,9 +1,6 @@
 import pygame
 import Gui_Screen
 
-LIGHT_TEXT_PALETTE = [0x0, 0x802810, 0xe48820, 0xe46824]
-DARK_TEXT_PALETTE  = [0x0, 0x440c00, 0xac542c]
-
 # ==============================================================================
 class Gui_TextBox(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
@@ -15,7 +12,7 @@ class Gui_TextBox(Gui_Screen.Gui_Screen):
         self.v_text_lines = []
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
-        self.Gui_Screen.reset_triggers_list()
+        super(Gui_TextBox,self).reset_triggers_list()
         self.add_trigger({'action': "ESCAPE", 'rect': pygame.Rect((556, 459), ( 72, 20))})
 # ------------------------------------------------------------------------------
     def draw(self):

@@ -2,8 +2,6 @@ import pygame
 import Gui_Screen
 from Data_CONST import *
 
-COMMON_PALETTE = [0x0, 0x20284c, 0x789cc0]
-
 # ==============================================================================
 class Gui_LeadersScreen(Gui_Screen.Gui_Screen):
 # ------------------------------------------------------------------------------
@@ -12,11 +10,22 @@ class Gui_LeadersScreen(Gui_Screen.Gui_Screen):
         self.__type = 1
 # ------------------------------------------------------------------------------
     def reset_triggers_list(self):
-        self.Gui_Screen.reset_triggers_list()
+        super(Gui_LeadersScreen,self).reset_triggers_list()
         self.add_trigger({'action': "ESCAPE",        	 'rect': pygame.Rect((544, 445), (70, 18))})
         self.add_trigger({'action': "hire",         	 'rect': pygame.Rect((319, 445), (60, 18))})
         self.add_trigger({'action': "showColonyLeaders", 'rect': pygame.Rect((15, 14),   (135, 15))})
         self.add_trigger({'action': "showShipOfficers",	 'rect': pygame.Rect((160, 14),  (135, 15))})
+# ------------------------------------------------------------------------------
+    def process_trigger(self, trigger):
+        s_action = trigger['action']
+
+        if s_action == "showColonyLeaders" and self.__type == K_HERO_OFFICER:
+            self.__type = K_HERO_GOVERNOR
+            self.redraw_flip()
+
+        elif s_action == "showShipOfficers" and self.__type == K_HERO_GOVERNOR:
+            self.__type = K_HERO_OFFICER
+            self.redraw_flip()
 # ------------------------------------------------------------------------------
     def draw(self):
         STARS = self.list_stars()
@@ -45,9 +54,9 @@ class Gui_LeadersScreen(Gui_Screen.Gui_Screen):
                 location_text = "ship..."
 
             self.blit_image((13, 38 + (109 * i)), 'leader', 'face', hero['picture'])
-            self.write_text(K_FONT4, COMMON_PALETTE, 125, 38 + (109 * i), hero['name'])
+            self.write_text(K_FONT4, K_PALETTE_COMMON, 125, 38 + (109 * i), hero['name'])
 
-            location_surface = self.render(K_FONT3, COMMON_PALETTE, location_text, 2)
+            location_surface = self.render(K_FONT3, K_PALETTE_COMMON, location_text, 2)
             text_width, text_height = location_surface.get_size()
             self.blit(location_surface, (49 - (text_width / 2), 131 + (109 * i)))
 
@@ -56,20 +65,8 @@ class Gui_LeadersScreen(Gui_Screen.Gui_Screen):
             for skill in skills:
                 y = 50 + (109 * i) + (17 * skill_row)
                 self.blit_image((94, y), 'leader', 'skill_icon', skill[0])
-                self.write_text(K_FONT4, COMMON_PALETTE, 116, y + 4, skill[1])
+                self.write_text(K_FONT4, K_PALETTE_COMMON, 116, y + 4, skill[1])
                 skill_row += 1
-
-# ------------------------------------------------------------------------------
-    def process_trigger(self, trigger):
-
-        s_action = trigger['action']
-        if s_action == "showColonyLeaders" and self.__type == K_HERO_OFFICER:
-            self.__type = K_HERO_GOVERNOR
-            self.redraw_flip()
-
-        elif s_action == "showShipOfficers" and self.__type == K_HERO_GOVERNOR:
-            self.__type = K_HERO_OFFICER
-            self.redraw_flip()
 
 # ------------------------------------------------------------------------------
     def setup_skills(hero):

@@ -27,7 +27,7 @@ class Network_Client(object):
         self.socket.send({'action': action, 'params': params})
 
     def login(self, player_id):
-        self.player_id = player_id
+        self.player_id = int(player_id)
         self.send("LOGIN", {'player_id': player_id})
 
     def logout(self):
@@ -56,6 +56,8 @@ class Network_Client(object):
         if not self.game_data:
             print("! ERROR: Network_Client::fetch_game_data() ... no data???")
             return False
+        print type(self.game_data['me'])
+        print self.game_data['me'].i_player_id
         return True
 
     def game_data(self):
@@ -95,20 +97,18 @@ class Network_Client(object):
         """returns all ships as a list of ship_id's (old method)"""
         return self.game_data['ships']
 
-    def list_ships(self,player_id=-1):
+    def list_ships(self, i_player_id=-1):
         """
         returns ships of one player as a list of starship objects
         """
-        ships = []
-        for ship_id in self.game_data['ships']:
-            ship        = self.game_data['ships'][ship_id]
-            ship_player = self.game_data['players'][ship.owner_id]
-            if ship.has_no_image() and hasattr(player, 'color'):
-                color = player.get_color()
-                ship.determine_image_keys(color)
-            if ship.owner_id == player_id and ship.exists():
-                ships.append(ship)
-        return ships
+        v_ships = []
+        for i_ship_id, o_ship in self.game_data['ships'].items():
+            o_player = self.game_data['players'][o_ship.i_owner_id]
+            if o_ship.has_no_image() and hasattr(o_player, 'color'):
+                o_ship.determine_image_keys(player.i_color)
+            if o_ship.i_owner_id == i_player_id and o_ship.exists():
+                v_ships.append(o_ship)
+        return v_ships
 
     def list_prototypes(self):
         return self.game_data['prototypes']
@@ -116,8 +116,8 @@ class Network_Client(object):
     def list_officers(self):
         return self.game_data['officers']
 
-    def list_colony_leaders(self):
-        return self.game_data['colony_leaders']
+    def list_governors(self):
+        return self.game_data['governors']
 
     def list_players(self):
         return self.game_data['players']

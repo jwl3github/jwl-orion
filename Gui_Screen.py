@@ -1,54 +1,82 @@
 import time
 
+import pygame
 from pygame.locals import *
 
-import Gui
 import Network_Client
+from Data_CONST import *
 
 MOUSE_LEFT_BUTTON       = 1
 MOUSE_MIDDLE_BUTTON     = 2
 MOUSE_RIGHT_BUTTON      = 3
 MOUSE_WHEELUP           = 4
 MOUSE_WHEELDOWN         = 5
+GUI                     = None
 
 # ==============================================================================
 class Gui_Screen(object):
     """Base gui screen class.
     Every game screen class should inherit from this one.
     """
-    __triggers        = []
-    __old_hover       = None
-    __hover           = None
-    __hover_changed   = False
-    __hover_mouse_pos = None
-    FONT1             = None
-    FONT2             = None
-    FONT3             = None
-    FONT4             = None
-    FONT5             = None
-    FONT6             = None
-    FONT_LIST         = []
-    DISPLAY           = None
+    __triggers         = []
+    __old_hover        = None
+    __hover            = None
+    __hover_changed    = False
+    __hover_mouse_pos  = None
+    FONT1              = None
+    FONT2              = None
+    FONT3              = None
+    FONT4              = None
+    FONT5              = None
+    FONT6              = None
+    FONT_LIST          = []
+    SAVED_DISPLAY_COPY = None
+    PLAYER_ID          = -1
 
     def __init__(self):
         pass
 
-    def init(self):   # Called by Gui_Client::init
-        if not Gui_Screen.DISPLAY:
-            Gui_Screen.FONT1     = Gui.GUI.get_font('font1')
-            Gui_Screen.FONT2     = Gui.GUI.get_font('font2')
-            Gui_Screen.FONT3     = Gui.GUI.get_font('font3')
-            Gui_Screen.FONT4     = Gui.GUI.get_font('font4')
-            Gui_Screen.FONT5     = Gui.GUI.get_font('font5')
-            Gui_Screen.FONT6     = Gui.GUI.get_font('font6')
+    def init(self, GUI_):   # Called by Gui_Client::init
+        global GUI
+        if not GUI:
+            print 'Initializing Gui_Screen...'
+            GUI                  = GUI_
+            Gui_Screen.FONT1     = GUI.get_font('font1')
+            Gui_Screen.FONT2     = GUI.get_font('font2')
+            Gui_Screen.FONT3     = GUI.get_font('font3')
+            Gui_Screen.FONT4     = GUI.get_font('font4')
+            Gui_Screen.FONT5     = GUI.get_font('font5')
+            Gui_Screen.FONT6     = GUI.get_font('font6')
             Gui_Screen.FONT_LIST = [ None, Gui_Screen.FONT1, Gui_Screen.FONT2, Gui_Screen.FONT3, Gui_Screen.FONT4, Gui_Screen.FONT5, Gui_Screen.FONT6 ]
-            Gui_Screen.DISPLAY   = Gui.GUI.get_display()
+
+    def get_player_id(self):
+        return Network_Client.Client.player_id
+
+    def list_governors(self):
+        return Network_Client.Client.list_governors()
+
+    def list_officers(self):
+        return Network_Client.Client.list_officers()
+
+    def list_colonies(self):
+        return Network_Client.Client.list_colonies()
 
     def list_players(self):
         return Network_Client.Client.list_players()
 
+    def list_planets(self):
+        return Network_Client.Client.list_planets()
+
+    def get_stardate_text(self):
+        stardate = Network_Client.Client.get_stardate()
+        s = str(stardate)
+        return s[:-1] + "." + s[-1]
+
     def get_stardate(self):
         return Network_Client.Client.get_stardate()
+
+    def get_galaxy(self):
+        return Network_Client.Client.get_galaxy()
 
     def get_me(self):
         return Network_Client.Client.get_me()
@@ -62,6 +90,12 @@ class Gui_Screen(object):
     def list_ships(self, i_player_id):
         return Network_Client.Client.list_ships(i_player_id)
 
+    def get_player(self, i_player_id):
+        return Network_Client.Client.get_player(i_player_id)
+
+    def get_colony(self, i_colony_id):
+        return Network_Client.Client.get_colony(i_colony_id)
+
     def get_planet(self, i_planet_id):
         return Network_Client.Client.get_planet(i_planet_id)
 
@@ -74,18 +108,55 @@ class Gui_Screen(object):
     def list_stars_by_coords(self):
         return Network_Client.Client.list_stars_by_coords()
 
-    def draw_image_by_key(self, s_image_name, t_coords):
-        Gui.GUI.draw_image_by_key(s_image_name, t_coords)
+    def list_prototypes(self):
+        return Network_Client.Client.list_prototypes()
+
+    def draw_line(self, color, p1, p2, line_width):
+        pygame.draw.line(GUI.DISPLAY, color, p1, p2, line_width)
+
+    def draw_rect(self, color, x, y, width, height, line_width):
+        pygame.draw.rect(GUI.DISPLAY, color, pygame.Rect((x, y), (width, height)), line_width)
+
+    def draw_image(self, t_coords, o_img):
+        GUI.draw_image(o_img, t_coords)
+
+    def draw_image_by_key(self, t_coords, s_image_name, key1=None, key2=None, key3=None):
+        GUI.draw_image(GUI.get_image(s_image_name,key1,key2,key3), t_coords)
+
+    def save_curr_display_copy(self):
+        Gui_Screen.SAVED_DISPLAY_COPY = GUI.DISPLAY.copy()
+
+    def restore_curr_display_copy(self):
+        if Gui_Screen.SAVED_DISPLAY_COPY:
+            GUI.DISPLAY.blit(self.SAVED_DISPLAY_COPY, (0, 0))
+
+    def reset_curr_display_copy(self):
+        Gui_Screen.SAVED_DISPLAY_COPY = None
+
+    def get_planet_background(self, i_terrain, i_planet):
+        GUI.get_planet_background(i_terrain, i_planet)
+
+    def repeat_draw(self, x, y, source_surface, number, icon_width, break_count, area_width):
+        return GUI.repeat_draw(GUI.DISPLAY, x, y, source_surface, number, icon_width, break_count, area_width)
+
+    def fill(self, color):
+        GUI.DISPLAY.fill(color)
+
+    def run_screen(self, screen):
+        GUI.run_screen(screen)
 
     def blit(self, item, t_coords):
-        Gui_Screen.DISPLAY.blit(item, t_coords)
+        if item:
+            GUI.DISPLAY.blit(item, t_coords)
+        else:
+            print 'Gui_Screen.blit() -- item is None'
 
     def blit_image(self, t_coords, img_key, subkey1 = None, subkey2 = None, subkey3 = None):
-        """Returns an image object from GUI engine, identified by its key(s)"""
+        """Returns an image object from the GUI engine, identified by its key(s)"""
         self.blit(self.get_image(img_key, subkey1, subkey2, subkey3), t_coords)
 
     def write_text(self, k_font, v_palette, i_x, i_y, s_text, i_letter_spacing = 1):
-        Gui_Screen.FONT_LIST[k_font].write_text(Gui_Screen.DISPLAY, i_x, i_y, s_text, v_palette, i_letter_spacing)
+        Gui_Screen.FONT_LIST[k_font].write_text(GUI.DISPLAY, i_x, i_y, s_text, v_palette, i_letter_spacing)
 
     def render(self, k_font, v_palette, s_text, i_letter_spacing = 1):
         return Gui_Screen.FONT_LIST[k_font].render(s_text, v_palette, i_letter_spacing)
@@ -120,20 +191,20 @@ class Gui_Screen(object):
 
 
     def get_image(self, img_key, subkey1 = None, subkey2 = None, subkey3 = None):
-        """Returns an image object from GUI engine, identified by its key(s)"""
-        return Gui.GUI.get_image(img_key, subkey1, subkey2, subkey3)
+        """Returns an image object from the GUI engine, identified by its key(s)"""
+        return GUI.get_image(img_key, subkey1, subkey2, subkey3)
 
 
     def redraw_flip(self):
         """Redraws the screen, takes care about mouse cursor and flips the graphic buffer to display"""
         self.draw()
-        Gui.GUI.highlight_triggers(self.list_triggers())
-        Gui.GUI.flip()
+        GUI.highlight_triggers(self.list_triggers())
+        GUI.flip()
 
     def redraw_noflip(self):
         """Redraws the screen, takes care about mouse cursor but doesn't flip the buffer to display"""
         self.draw()
-        Gui.GUI.highlight_triggers(self.list_triggers())
+        GUI.highlight_triggers(self.list_triggers())
 
 
     def prepare(self):
@@ -203,7 +274,7 @@ class Gui_Screen(object):
     def on_keydown(self, event):
         """Default implementation of a keyboard event handling.
 
-        If keypress is detected by a GUI engine it calls this method.
+        If keypress is detected by the GUI engine it calls this method.
         The pressed key is checked against the trigger list.
         Returns the first trigger where the key matches the pressed or
         None if no trigger matches the keypress
@@ -233,7 +304,7 @@ class Gui_Screen(object):
 
 
     def update_hover(self, mouse_pos):
-        """This method is invoked by a GUI engine on every pure mouse move
+        """This method is invoked by the GUI engine on every pure mouse move
         and right before the screen's on_mousemotion() method.
 
         Mouse position is checked against screen's trigger list.
@@ -270,7 +341,7 @@ class Gui_Screen(object):
             return False
 
     def on_mousemotion(self, event):
-        """Invoked by a GUI engine on every pure (non-dragging) mouse move.
+        """Invoked by the GUI engine on every pure (non-dragging) mouse move.
 
         Currently no screen requires to override this empty implementation.
 
@@ -285,11 +356,11 @@ class Gui_Screen(object):
         return None
 
     def on_mousedrag(self, drag_item, pos, rel):
-        """Invoked by a GUI engine when left mouse button is being held, drag item is set and mouse moves"""
+        """Invoked by the GUI engine when left mouse button is being held, drag item is set and mouse moves"""
         pass
 
     def on_mousedrop(self, drag_item, (mouse_x, mouse_y)):
-        """Invoked by a GUI engine when mouse dragging stops
+        """Invoked by the GUI engine when mouse dragging stops
         (drag item was set and left mouse button was released).
 
         """
@@ -308,21 +379,21 @@ class Gui_Screen(object):
         pass
 
     def enter(self):
-        """ Called by GUI engine right before Gui_Client::run_screen() is invoked
+        """ Called by the GUI engine right before Gui_Client::run_screen() is invoked
         Suitable for saving initial state that can be reveresed by the screen's cancel() method
 
         """
         pass
 
     def leave_confirm(self):
-        """ Called by GUI engine when CONFIRM trigger is activated
+        """ Called by the GUI engine when CONFIRM trigger is activated
         Every screen that sends data to the game server should implement this method
 
         """
         pass
 
     def leave_cancel(self):
-        """ Called by GUI engine when ESCAPE trigger is activated
+        """ Called by the GUI engine when ESCAPE trigger is activated
             This is the right place to implement things like getting the screen to state before any changes were made
         """
         pass

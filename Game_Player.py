@@ -7,6 +7,7 @@ class Game_Player(Game_Object.Game_Object):
     def __init__(self, i_player_id):
         super(Game_Player,self).__init__(i_player_id)
         # Loaded
+        self.i_player_id            = i_player_id
         self.s_emperor_name         = ''
         self.s_race_name            = ''
         self.i_picture              = 0
@@ -31,6 +32,7 @@ class Game_Player(Game_Object.Game_Object):
         self.d_racepicks            = {}
         # Derived
         self.i_used_command         = 0
+        self.v_research_areas       = []
         self.i_research_cost        = 0
         self.i_research_turns_left  = 0
         self.v_explored_star_ids    = []
@@ -125,7 +127,7 @@ class Game_Player(Game_Object.Game_Object):
         self.v_known_techs.append(i_tech_id)
 # ------------------------------------------------------------------------------
     def knows_technology(self, i_tech_id):
-        return i_tech_id in self.known_techs
+        return i_tech_id in self.v_known_techs
 # ------------------------------------------------------------------------------
     def add_prototype(self, d_prototype):
         self.v_prototypes.append(d_prototype)
@@ -133,8 +135,8 @@ class Game_Player(Game_Object.Game_Object):
     def add_tribute(self, d_tribute):
         self.v_tributes.append(d_tribute)
 # ------------------------------------------------------------------------------
-    def update_research_areas(self, i_research_areas):
-        self.i_research_areas = i_research_areas
+    def update_research_areas(self, v_research_areas):
+        self.v_research_areas = v_research_areas
 # ------------------------------------------------------------------------------
     def knows_star_id(self, i_star_id):
         return i_star_id in self.v_explored_star_ids
@@ -145,7 +147,7 @@ class Game_Player(Game_Object.Game_Object):
 # ------------------------------------------------------------------------------
     def print_debug(self):
         print
-        print("=== player_id = %i ===" % self.id)
+        print("=== player_id = %i ===" % self.i_id)
         print(self.serialize())
 # ------------------------------------------------------------------------------
     def print_research_debug(self):
@@ -157,7 +159,9 @@ class Game_Player(Game_Object.Game_Object):
     def serialize(self):
         ''' Minimal-exchange highly trusted updater; avoiding pickle since player object contains so much static data. '''
         # Static values that are light weight and useful to include for debugging.
-        s_fixed  = '\nself.s_emperor_name        = ' + self.as_str(self.s_emperor_name) +  \
+        s_fixed  = '\nself.i_id                  = ' + str(self.i_id)                   +  \
+                   '\nself.i_player_id           = ' + str(self.i_player_id)            +  \
+                   '\nself.s_emperor_name        = ' + self.as_str(self.s_emperor_name) +  \
                    '\nself.s_race_name           = ' + self.as_str(self.s_race_name)    +  \
                    '\nself.i_picture             = ' + str(self.i_picture)              +  \
                    '\nself.i_color               = ' + str(self.i_color)                +  \
@@ -186,7 +190,7 @@ class Game_Player(Game_Object.Game_Object):
         s_rare   = '\nself.v_known_techs         = ' + str(self.v_known_techs)          +  \
                    '\nself.v_prototypes          = ' + str(self.v_prototypes)           +  \
                    '\nself.v_tributes            = ' + str(self.v_tributes)             +  \
-                   '\nself.v_racepicks           = ' + str(self.v_racepicks)
+                   '\nself.d_racepicks           = ' + str(self.d_racepicks)
         s_serial = s_fixed + s_often # + s_rare
         #print s_serial
         return s_serial
